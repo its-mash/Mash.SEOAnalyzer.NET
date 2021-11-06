@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31605.320
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mash.SEOAnalyser.NET", "Mash.SEOAnalyser.NET\Mash.SEOAnalyser.NET.csproj", "{7217BD1B-1B7F-4FAF-A8EE-9A0F33F5ACE4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mash.SEOAnalyzer.NET", "Mash.SEOAnalyzer.NET\Mash.SEOAnalyzer.NET.csproj", "{7217BD1B-1B7F-4FAF-A8EE-9A0F33F5ACE4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mash.AhoCoraSick.NET", "Mash.AhoCorasick.NET\Mash.AhoCoraSick.NET\Mash.AhoCoraSick.NET.csproj", "{8901D755-B346-45CE-96CF-35F9ACB3703E}"
 EndProject
