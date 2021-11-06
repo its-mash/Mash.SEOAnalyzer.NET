@@ -1,0 +1,6 @@
+[submodule "Mash.AhoCorasick.NET"]
+	path = Mash.AhoCorasick.NET
+	url = git@github.com:its-mash/Mash.AhoCorasick.NET.git
+[submodule "Mash.HelperMethods.NET"]
+	path = Mash.HelperMethods.NET
+	url = git@github.com:its-mash/Mash.HelperMethods.NET.git
