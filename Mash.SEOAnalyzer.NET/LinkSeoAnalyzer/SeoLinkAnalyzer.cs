@@ -15,7 +15,7 @@ namespace Mash.SEOAnalyzer.NET
 
         public SeoLinkAnalyzer(Uri url) : base(string.Empty)
         {
-            if (url.Scheme != "http" && url.Scheme != "https")
+            if (url.Scheme != Uri.UriSchemeHttp && url.Scheme != Uri.UriSchemeHttps)
             {
                 throw new ArgumentException("The url provided is not a valid webpage link");
 

@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mash.SeoAnalyzer.NET.Test",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mash.HelperMethods.NET", "Mash.AhoCorasick.NET\Mash.HelperMethods.NET\Mash.HelperMethods.NET.csproj", "{954C8720-236B-427C-8F87-183C4F020993}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "..\Test\Test.csproj", "{74977239-50FB-4B5E-A67F-3E56E17595DD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{954C8720-236B-427C-8F87-183C4F020993}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{954C8720-236B-427C-8F87-183C4F020993}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{954C8720-236B-427C-8F87-183C4F020993}.Release|Any CPU.Build.0 = Release|Any CPU
+		{74977239-50FB-4B5E-A67F-3E56E17595DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74977239-50FB-4B5E-A67F-3E56E17595DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74977239-50FB-4B5E-A67F-3E56E17595DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74977239-50FB-4B5E-A67F-3E56E17595DD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
