@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Mash.AhoCoraSick;
+using Mash.HelperMethods.NET;
 using Mash.HelperMethods.NET.ExtensionMethods;
 
 namespace Mash.SEOAnalyzer.NET
@@ -12,12 +14,23 @@ namespace Mash.SEOAnalyzer.NET
         private int _flags = 0;
         protected readonly object Lock = new object();
 
-        protected bool FlagChangedAfterGeneratingLastResult = false;
+        private bool _flagChangedAfterGeneratingLastResult = false;
         protected static AhoCorasickEnglishWordsSetSearch StopWordsAutomaton;
-        protected readonly string StringToSearchIn;
+        protected string StringToSearchIn;
         private readonly char[] _invalidBeginningCharacters = new char[] { '-', '&', '\'' };
         private readonly char[] _invalidEndingCharacters = new char[] { '-', '&', '\'' };
+        private SeoTextAnalyzerResult _result;
 
+        static SeoAnalyzer()
+        {
+            StopWordsAutomaton = new AhoCorasickEnglishWordsSetSearch(Constants.StopWords, true);
+        }
+
+        internal SeoAnalyzer(string stringToSearchIn)
+        {
+            StringToSearchIn = stringToSearchIn;
+
+        }
         protected bool CalculateWordOccurrences
         {
             get => _flags.GetBit(0);
@@ -28,7 +41,7 @@ namespace Mash.SEOAnalyzer.NET
 
                     if (value != _flags.GetBit(0))
                     {
-                        FlagChangedAfterGeneratingLastResult = true;
+                        _flagChangedAfterGeneratingLastResult = true;
                     }
 
                     _flags.SetBit(0, value);
@@ -46,7 +59,7 @@ namespace Mash.SEOAnalyzer.NET
 
                     if (value != _flags.GetBit(1))
                     {
-                        FlagChangedAfterGeneratingLastResult = true;
+                        _flagChangedAfterGeneratingLastResult = true;
                     }
                     _flags.SetBit(1, value);
                 }
@@ -63,22 +76,17 @@ namespace Mash.SEOAnalyzer.NET
 
                     if (value != _flags.GetBit(2))
                     {
-                        FlagChangedAfterGeneratingLastResult = true;
+                        _flagChangedAfterGeneratingLastResult = true;
                     }
                     _flags.SetBit(2, value);
-                    FlagChangedAfterGeneratingLastResult = true;
+                    _flagChangedAfterGeneratingLastResult = true;
                 }
             }
         }
 
-        static SeoAnalyzer()
+        protected void SetReCalculateResult()
         {
-            StopWordsAutomaton = new AhoCorasickEnglishWordsSetSearch(Constants.StopWords, true);
-        }
-
-        internal SeoAnalyzer(string stringToSearchIn)
-        {
-            StringToSearchIn = stringToSearchIn;
+            _flagChangedAfterGeneratingLastResult = true;
 
         }
         protected bool IsValidWordInCurrentContext(string toString, ref string s)
@@ -92,6 +100,112 @@ namespace Mash.SEOAnalyzer.NET
             }
             //contains only numbers and special characters;
             return false;
+        }
+
+        //TODO: combine CalculateWordOccurrence and count externalLinks under same iteration of StringToSearch to optimize out Extra Iteration of third party code.
+        //TODO: Add further caching to recalculate parts of the result only if the corresponding flag changed
+        protected SeoTextAnalyzerResult GetResult()
+        {
+
+            if (_result == null || _flagChangedAfterGeneratingLastResult)
+            {
+                _result = new SeoTextAnalyzerResult();
+                if (this.CalculateWordOccurrences)
+                {
+                    if (this.FilterStopWords)
+                    {
+                        StringBuilder possibleWord = new StringBuilder();
+                        bool isNoneRepeatableLastChar = false;
+                        bool stopWordMatchFailed = false;
+                        for (int i = 0; i < StringToSearchIn.Length; i++)
+                        {
+                            bool isNoneRepeatableLastCharCopy = isNoneRepeatableLastChar;
+                            char ch = StringToSearchIn[i];
+                            if (ch.IsValidWordCharacter(out isNoneRepeatableLastChar) &&
+                                (!isNoneRepeatableLastCharCopy || !isNoneRepeatableLastChar))
+                            {
+                                possibleWord.Append(ch);
+                                if (!stopWordMatchFailed)
+                                {
+                                    bool isMatch = StopWordsAutomaton.GoToCharacter(ch, out int newStateNo);
+                                    stopWordMatchFailed = newStateNo == -1;
+                                    if (isMatch)
+                                    {
+                                        if (i + 1 == StringToSearchIn.Length ||
+                                            !StringToSearchIn[i + 1].IsValidStopWordContinuingCharacter())
+                                        {
+                                            possibleWord.Clear();
+
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                stopWordMatchFailed = false;
+                                StopWordsAutomaton.ResetSearchState();
+                                string key = null;
+                                if (IsValidWordInCurrentContext(possibleWord.ToString(), ref key))
+                                {
+                                    key = SanitizeKey(key);
+                                    _result.WordOccurrenceCounts.IncrementValueBy1(key);
+                                }
+
+                                possibleWord.Clear();
+
+                            }
+
+                        }
+                    }
+                    else
+                    {
+                        //Code repetition to avoid should filter stopWordCheck every time
+                        StringBuilder possibleWord = new StringBuilder();
+                        bool isNoneRepeatableCurrentChar = false;
+                        for (int i = 0; i < StringToSearchIn.Length; i++)
+                        {
+                            bool isNoneRepeatableLastChar = isNoneRepeatableCurrentChar;
+                            char ch = StringToSearchIn[i];
+                            if (ch.IsValidWordCharacter(out isNoneRepeatableCurrentChar) &&
+                                (!isNoneRepeatableLastChar || !isNoneRepeatableCurrentChar))
+                            {
+                                possibleWord.Append(ch);
+                            }
+                            else
+                            {
+                                string key = null;
+                                if (IsValidWordInCurrentContext(possibleWord.ToString(), ref key))
+                                {
+                                    key = SanitizeKey(key);
+                                    _result.WordOccurrenceCounts.IncrementValueBy1(key);
+                                }
+
+                                possibleWord.Clear();
+                            }
+
+                        }
+
+                    }
+                }
+
+                if (this.CountExternalLinks)
+                {
+
+                    var linkParser = new Regex(RegexPattern.LinkPattern3);
+                    var matchCollection = linkParser.Matches(StringToSearchIn);
+                    foreach (Match match in matchCollection)
+                    {
+                        if (match.Value[match.Value.Length - 1] != '.')
+                            _result.ExternalLinksFoundInTextCount.IncrementValueBy1(match.Value);
+                    }
+
+
+                }
+
+                _flagChangedAfterGeneratingLastResult = false;
+            }
+
+            return _result;
         }
         internal string SanitizeKey(string key)
         {
