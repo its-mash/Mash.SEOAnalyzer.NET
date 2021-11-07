@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.37" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Mash.AhoCorasick.NET\Mash.AhoCoraSick.NET\Mash.AhoCoraSick.NET.csproj" />
   </ItemGroup>
 

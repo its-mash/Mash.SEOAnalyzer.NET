@@ -22,7 +22,6 @@ namespace Mash.SEOAnalyzer.NET
         private Uri _url;
         private SeoLinkAnalyzerResult _result;
         private Dictionary<string, string> _headers = new Dictionary<string, string>();
-        private Dictionary<string, int> _metaDataKeywordsCount = new Dictionary<string, int>();
         private AhoCorasickEnglishWordsSetSearch _metaKeywordAutomaton = new AhoCorasickEnglishWordsSetSearch(true);
         private bool _flagChangedAfterGeneratingLastResult = false;
 
@@ -98,7 +97,6 @@ namespace Mash.SEOAnalyzer.NET
                 {
                     _result = new SeoLinkAnalyzerResult();
                     base.SetReCalculateResult();
-                    _metaDataKeywordsCount.Clear();
                     _metaKeywordAutomaton = new AhoCorasickEnglishWordsSetSearch(true);
                     HtmlDocument htmlDocument;
                     if (AnalyzeContentAfterRenderingReturnedHtmlAlso)
@@ -156,11 +154,12 @@ namespace Mash.SEOAnalyzer.NET
                         (!isNoneRepeatableLastCharCopy || !isNoneRepeatableLastChar))
                     {
                         possibleWord.Append(ch);
+                        bool stopWordMatch = stopWordMatchFailed;
                         if (!stopWordMatchFailed)
                         {
-                            bool isMatch = StopWordsAutomaton.GoToCharacter(ch, out int newStateNo);
+                            stopWordMatch = StopWordsAutomaton.GoToCharacter(ch, out int newStateNo);
                             stopWordMatchFailed = newStateNo == -1;
-                            if (isMatch)
+                            if (stopWordMatch)
                             {
                                 if (i + 1 == StringToSearchIn.Length ||
                                     !StringToSearchIn[i + 1].IsValidStopWordContinuingCharacter())
@@ -174,7 +173,7 @@ namespace Mash.SEOAnalyzer.NET
                         {
                             bool isMatch = _metaKeywordAutomaton.GoToCharacter(ch, out int newStateNo);
                             metaKeyWordMatchFailed = newStateNo == -1;
-                            if (isMatch)
+                            if (isMatch && !stopWordMatch)
                             {
                                 if (i + 1 == StringToSearchIn.Length ||
                                     !StringToSearchIn[i + 1].IsValidMetaWordContinuingCharacter())
@@ -267,7 +266,10 @@ namespace Mash.SEOAnalyzer.NET
                     possibleWord.Append(ch);
                     bool isMatchStopWord = StopWordsAutomaton.GoToCharacter(ch, out _);
                     bool isMatchMetaKeyword = _metaKeywordAutomaton.GoToCharacter(ch, out int nextMetaKeywordStateNo);
-                    if (nextMetaKeywordStateNo == -1) possibleWord.Clear();
+                    if (nextMetaKeywordStateNo == -1)
+                    {
+                        possibleWord.Clear();
+                    }
                     else if (isMatchMetaKeyword && !isMatchStopWord)
                     {
                         if (i + 1 == StringToSearchIn.Length ||
@@ -326,7 +328,21 @@ namespace Mash.SEOAnalyzer.NET
                 {
                     using (var stream = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
                     {
-                        var htmlText = await stream.ReadToEndAsync();
+                        var htmlTextSb = new StringBuilder();
+                        bool lastCharWhiteSpace = false;
+                        while (!stream.EndOfStream)
+                        {
+                            char ch = (char)stream.Read();
+                            bool isWhiteSpace = ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
+                            if (!isWhiteSpace || !lastCharWhiteSpace)
+                            {
+                                htmlTextSb.Append(ch);
+                            }
+
+                            lastCharWhiteSpace = isWhiteSpace;
+
+                        }
+                        var htmlText = htmlTextSb.ToString();
                         var document = new HtmlDocument();
                         document.LoadHtml(htmlText);
                         if (document.IsValid())
@@ -380,13 +396,14 @@ namespace Mash.SEOAnalyzer.NET
                     {
 
                         _metaKeywordAutomaton.AddEnglishWord(metaKeyword);
-                        _metaDataKeywordsCount.InitializeValueToZeroIfKeyDoesNotExist(metaKeyword);
+                        _result.MetaKeyWordOccurrencesInTextCounts.InitializeValueToZeroIfKeyDoesNotExist(metaKeyword);
                     }
                     catch (Exception e)
                     {
                         // ignored
                     }
                 }
+
 
             }
 
