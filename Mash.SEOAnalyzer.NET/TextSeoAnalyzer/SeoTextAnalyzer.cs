@@ -36,103 +36,110 @@ namespace Mash.SEOAnalyzer.NET
         //TODO: Add further caching to recalculate parts of the result only if the corresponding flag changed
         public SeoTextAnalyzerResult GetResult()
         {
-            if (_result == null || _flagChangedAfterGeneratingLastResult)
+            lock (Lock)
             {
-                _result = new SeoTextAnalyzerResult();
-                if (this.CalculateWordOccurrences)
-                {
-                    if (this.FilterStopWords)
-                    {
-                        StringBuilder possibleWord = new StringBuilder();
-                        bool isNoneRepeatableLastChar = false;
-                        bool stopWordMatchFailed = false;
-                        for (int i = 0; i < _stringToSearchIn.Length; i++)
-                        {
-                            bool isNoneRepeatableLastCharCopy = isNoneRepeatableLastChar;
-                            char ch = _stringToSearchIn[i];
-                            if (ch.IsValidWordCharacter(out isNoneRepeatableLastChar) && (!isNoneRepeatableLastCharCopy || !isNoneRepeatableLastChar))
-                            {
-                                possibleWord.Append(ch);
-                                if (!stopWordMatchFailed)
-                                {
-                                    bool isMatch = _stopWordsAutomaton.GoToCharacter(ch, out int newStateNo);
-                                    stopWordMatchFailed = newStateNo == -1;
-                                    if (isMatch)
-                                    {
-                                        if (i + 1 == _stringToSearchIn.Length ||
-                                            !_stringToSearchIn[i + 1].IsValidStopWordContinuingCharacter())
-                                        {
-                                            possibleWord.Clear();
 
+                if (_result == null || FlagChangedAfterGeneratingLastResult)
+                {
+                    _result = new SeoTextAnalyzerResult();
+                    if (this.CalculateWordOccurrences)
+                    {
+                        if (this.FilterStopWords)
+                        {
+                            StringBuilder possibleWord = new StringBuilder();
+                            bool isNoneRepeatableLastChar = false;
+                            bool stopWordMatchFailed = false;
+                            for (int i = 0; i < StringToSearchIn.Length; i++)
+                            {
+                                bool isNoneRepeatableLastCharCopy = isNoneRepeatableLastChar;
+                                char ch = StringToSearchIn[i];
+                                if (ch.IsValidWordCharacter(out isNoneRepeatableLastChar) &&
+                                    (!isNoneRepeatableLastCharCopy || !isNoneRepeatableLastChar))
+                                {
+                                    possibleWord.Append(ch);
+                                    if (!stopWordMatchFailed)
+                                    {
+                                        bool isMatch = StopWordsAutomaton.GoToCharacter(ch, out int newStateNo);
+                                        stopWordMatchFailed = newStateNo == -1;
+                                        if (isMatch)
+                                        {
+                                            if (i + 1 == StringToSearchIn.Length ||
+                                                !StringToSearchIn[i + 1].IsValidStopWordContinuingCharacter())
+                                            {
+                                                possibleWord.Clear();
+
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            else
-                            {
-                                stopWordMatchFailed = false;
-                                _stopWordsAutomaton.ResetSearchState();
-                                string key = null;
-                                if (IsValidWordInCurrentContext(possibleWord.ToString(), ref key))
+                                else
                                 {
-                                    key = SanitizeKey(key);
-                                    _result.WordOccurrenceCounts.IncrementValueBy1(key);
+                                    stopWordMatchFailed = false;
+                                    StopWordsAutomaton.ResetSearchState();
+                                    string key = null;
+                                    if (IsValidWordInCurrentContext(possibleWord.ToString(), ref key))
+                                    {
+                                        key = SanitizeKey(key);
+                                        _result.WordOccurrenceCounts.IncrementValueBy1(key);
+                                    }
+
+                                    possibleWord.Clear();
+
                                 }
-                                possibleWord.Clear();
 
                             }
-
                         }
-                    }
-                    else
-                    {
-                        //Code repetition to avoid should filter stopWordCheck every time
-                        StringBuilder possibleWord = new StringBuilder();
-                        bool isNoneRepeatableCurrentChar = false;
-                        for (int i = 0; i < _stringToSearchIn.Length; i++)
+                        else
                         {
-                            bool isNoneRepeatableLastChar = isNoneRepeatableCurrentChar;
-                            char ch = _stringToSearchIn[i];
-                            if (ch.IsValidWordCharacter(out isNoneRepeatableCurrentChar) && (!isNoneRepeatableLastChar || !isNoneRepeatableCurrentChar))
+                            //Code repetition to avoid should filter stopWordCheck every time
+                            StringBuilder possibleWord = new StringBuilder();
+                            bool isNoneRepeatableCurrentChar = false;
+                            for (int i = 0; i < StringToSearchIn.Length; i++)
                             {
-                                possibleWord.Append(ch);
-                            }
-                            else
-                            {
-                                string key = null;
-                                if (IsValidWordInCurrentContext(possibleWord.ToString(), ref key))
+                                bool isNoneRepeatableLastChar = isNoneRepeatableCurrentChar;
+                                char ch = StringToSearchIn[i];
+                                if (ch.IsValidWordCharacter(out isNoneRepeatableCurrentChar) &&
+                                    (!isNoneRepeatableLastChar || !isNoneRepeatableCurrentChar))
                                 {
-                                    key = SanitizeKey(key);
-                                    _result.WordOccurrenceCounts.IncrementValueBy1(key);
+                                    possibleWord.Append(ch);
+                                }
+                                else
+                                {
+                                    string key = null;
+                                    if (IsValidWordInCurrentContext(possibleWord.ToString(), ref key))
+                                    {
+                                        key = SanitizeKey(key);
+                                        _result.WordOccurrenceCounts.IncrementValueBy1(key);
+                                    }
+
+                                    possibleWord.Clear();
                                 }
 
-                                possibleWord.Clear();
                             }
 
                         }
 
                     }
 
-                }
-
-                if (this.CountExternalLinks)
-                {
-
-                    var linkParser = new Regex(RegexPattern.LinkPattern3);
-                    var matchCollection = linkParser.Matches(_stringToSearchIn);
-                    foreach (Match match in matchCollection)
+                    if (this.CountExternalLinks)
                     {
-                        if (match.Value[match.Value.Length - 1] != '.')
-                            _result.ExternalLinksCount.IncrementValueBy1(match.Value);
+
+                        var linkParser = new Regex(RegexPattern.LinkPattern3);
+                        var matchCollection = linkParser.Matches(StringToSearchIn);
+                        foreach (Match match in matchCollection)
+                        {
+                            if (match.Value[match.Value.Length - 1] != '.')
+                                _result.ExternalLinksCount.IncrementValueBy1(match.Value);
+                        }
+
+
                     }
 
-
+                    FlagChangedAfterGeneratingLastResult = false;
                 }
 
-                _flagChangedAfterGeneratingLastResult = false;
+                return _result;
             }
-
-            return _result;
         }
 
     }

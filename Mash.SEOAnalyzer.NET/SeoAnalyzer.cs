@@ -10,11 +10,12 @@ namespace Mash.SEOAnalyzer.NET
     public class SeoAnalyzer
     {
         private int _flags = 0;
+        protected readonly object Lock = new object();
 
-        protected bool _flagChangedAfterGeneratingLastResult = false;
-        protected static AhoCorasickEnglishWordsSetSearch _stopWordsAutomaton;
-        protected readonly string _stringToSearchIn;
-        private readonly char[] _invalidBeginingCharacters = new char[] { '-', '&', '\'' };
+        protected bool FlagChangedAfterGeneratingLastResult = false;
+        protected static AhoCorasickEnglishWordsSetSearch StopWordsAutomaton;
+        protected readonly string StringToSearchIn;
+        private readonly char[] _invalidBeginningCharacters = new char[] { '-', '&', '\'' };
         private readonly char[] _invalidEndingCharacters = new char[] { '-', '&', '\'' };
 
         protected bool CalculateWordOccurrences
@@ -22,11 +23,16 @@ namespace Mash.SEOAnalyzer.NET
             get => _flags.GetBit(0);
             set
             {
-                if (value != _flags.GetBit(0))
+                lock (Lock)
                 {
-                    _flagChangedAfterGeneratingLastResult = true;
+
+                    if (value != _flags.GetBit(0))
+                    {
+                        FlagChangedAfterGeneratingLastResult = true;
+                    }
+
+                    _flags.SetBit(0, value);
                 }
-                _flags.SetBit(0, value);
             }
         }
 
@@ -35,11 +41,15 @@ namespace Mash.SEOAnalyzer.NET
             get => _flags.GetBit(1);
             set
             {
-                if (value != _flags.GetBit(1))
+                lock (Lock)
                 {
-                    _flagChangedAfterGeneratingLastResult = true;
+
+                    if (value != _flags.GetBit(1))
+                    {
+                        FlagChangedAfterGeneratingLastResult = true;
+                    }
+                    _flags.SetBit(1, value);
                 }
-                _flags.SetBit(1, value);
             }
         }
 
@@ -48,23 +58,27 @@ namespace Mash.SEOAnalyzer.NET
             get => _flags.GetBit(2);
             set
             {
-                if (value != _flags.GetBit(2))
+                lock (Lock)
                 {
-                    _flagChangedAfterGeneratingLastResult = true;
+
+                    if (value != _flags.GetBit(2))
+                    {
+                        FlagChangedAfterGeneratingLastResult = true;
+                    }
+                    _flags.SetBit(2, value);
+                    FlagChangedAfterGeneratingLastResult = true;
                 }
-                _flags.SetBit(2, value);
-                _flagChangedAfterGeneratingLastResult = true;
             }
         }
 
         static SeoAnalyzer()
         {
-            _stopWordsAutomaton = new AhoCorasickEnglishWordsSetSearch(Constants.StopWords, true);
+            StopWordsAutomaton = new AhoCorasickEnglishWordsSetSearch(Constants.StopWords, true);
         }
 
         internal SeoAnalyzer(string stringToSearchIn)
         {
-            _stringToSearchIn = stringToSearchIn;
+            StringToSearchIn = stringToSearchIn;
 
         }
         protected bool IsValidWordInCurrentContext(string toString, ref string s)
@@ -81,7 +95,7 @@ namespace Mash.SEOAnalyzer.NET
         }
         internal string SanitizeKey(string key)
         {
-            if (_invalidBeginingCharacters.Contains(key[0]))
+            if (_invalidBeginningCharacters.Contains(key[0]))
                 key = key.Substring(1);
             if (_invalidEndingCharacters.Contains(key[key.Length - 1]))
                 key = key.Substring(0, key.Length - 1);
