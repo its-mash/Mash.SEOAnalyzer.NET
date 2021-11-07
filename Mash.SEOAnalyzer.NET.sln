@@ -7,7 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mash.SEOAnalyzer.NET", "Mas
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mash.AhoCoraSick.NET", "Mash.AhoCorasick.NET\Mash.AhoCoraSick.NET\Mash.AhoCoraSick.NET.csproj", "{8901D755-B346-45CE-96CF-35F9ACB3703E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mash.HelperMethods.NET", "Mash.HelperMethods.NET\Mash.HelperMethods.NET.csproj", "{FD88FE2A-93EF-4BDB-9BC8-192673C23DE1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mash.SeoAnalyzer.NET.Test", "..\Mash.SeoAnalyzer.NET.Test\Mash.SeoAnalyzer.NET.Test.csproj", "{2075FDB7-67CD-4C21-96F4-0B1A0C5A9FDF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mash.HelperMethods.NET", "Mash.AhoCorasick.NET\Mash.HelperMethods.NET\Mash.HelperMethods.NET.csproj", "{954C8720-236B-427C-8F87-183C4F020993}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +25,14 @@ Global
 		{8901D755-B346-45CE-96CF-35F9ACB3703E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8901D755-B346-45CE-96CF-35F9ACB3703E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8901D755-B346-45CE-96CF-35F9ACB3703E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FD88FE2A-93EF-4BDB-9BC8-192673C23DE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FD88FE2A-93EF-4BDB-9BC8-192673C23DE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FD88FE2A-93EF-4BDB-9BC8-192673C23DE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FD88FE2A-93EF-4BDB-9BC8-192673C23DE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2075FDB7-67CD-4C21-96F4-0B1A0C5A9FDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2075FDB7-67CD-4C21-96F4-0B1A0C5A9FDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2075FDB7-67CD-4C21-96F4-0B1A0C5A9FDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2075FDB7-67CD-4C21-96F4-0B1A0C5A9FDF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{954C8720-236B-427C-8F87-183C4F020993}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{954C8720-236B-427C-8F87-183C4F020993}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{954C8720-236B-427C-8F87-183C4F020993}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{954C8720-236B-427C-8F87-183C4F020993}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
