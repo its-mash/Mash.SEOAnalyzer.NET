@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
@@ -106,7 +107,7 @@ namespace Mash.SEOAnalyzer.NET
                     else
                     {
                         //TODO: restructure sync bit based locking to SemaphoreSlim to get the actual benefit of async method.
-                        htmlDocument = ProcessNoneRenderedHtml().Result;
+                        htmlDocument = ProcessNoneRenderedHtml();
 
                     }
 
@@ -118,13 +119,23 @@ namespace Mash.SEOAnalyzer.NET
                     {
                         CalculateMetaDataKeywordOccurrenceInPageTextCount();
                     }
-                    else
+                    else if (this.CalculateWordOccurrences && this.CalculateMetaDataKeywordOccurrencesInPageText)
                     {
                         CalculatePageTextOccurrenceCountAndMetaDataKeywordOccurrenceCountInPageText();
 
                     }
                     if (CountExternalLinks)
                     {
+                        var linkParser = new Regex(RegexPattern.LinkPattern3);
+                        var matchCollection = linkParser.Matches(StringToSearchIn);
+                        foreach (Match match in matchCollection)
+                        {
+                            if (Uri.TryCreate(match.Value.ToString(), UriKind.Absolute, out _))
+                            {
+
+                                _result.ExternalLinksFoundInTextCount.IncrementValueBy1(match.Value);
+                            }
+                        }
                         _result.ExternalLinksFoundInHtmlCount = htmlDocument.GetExternalLinksCountFoundInHtml(this._url);
 
                     }
@@ -379,18 +390,21 @@ namespace Mash.SEOAnalyzer.NET
 
         }
 
-        private async Task<HtmlDocument> GetRemoteHtml()
+        private HtmlDocument GetRemoteHtml()
         {
             try
             {
                 var webRequest = WebRequest.Create(_url);
                 webRequest.Timeout = 10000;
-                foreach (var header in _headers)
+                if (_headers != null)
                 {
-                    webRequest.Headers.Add(header.Key, header.Value);
+                    foreach (var header in _headers)
+                    {
+                        webRequest.Headers.Add(header.Key, header.Value);
+                    }
                 }
 
-                var resp = (HttpWebResponse)await webRequest.GetResponseAsync();
+                var resp = (HttpWebResponse)webRequest.GetResponse();
 
                 if (resp.StatusCode == HttpStatusCode.OK)
                 {
@@ -448,10 +462,10 @@ namespace Mash.SEOAnalyzer.NET
 
         }
 
-        private async Task<HtmlDocument> ProcessNoneRenderedHtml()
+        private HtmlDocument ProcessNoneRenderedHtml()
         {
 
-            var htmlDocument = await GetRemoteHtml();
+            var htmlDocument = GetRemoteHtml();
             htmlDocument.SanitizeContent();
             base.StringToSearchIn = htmlDocument.GetBodyText();
 
