@@ -97,7 +97,7 @@ namespace Mash.SEOAnalyzer.NET
                 {
                     _result = new SeoLinkAnalyzerResult();
                     base.SetReCalculateResult();
-                    _metaKeywordAutomaton = new AhoCorasickEnglishWordsSetSearch(true);
+                    _metaKeywordAutomaton = new AhoCorasickEnglishWordsSetSearch(true, patternIsValidEnglishWord: true);
                     HtmlDocument htmlDocument;
                     if (AnalyzeContentAfterRenderingReturnedHtmlAlso)
                     {
