@@ -117,18 +117,23 @@ namespace Mash.SEOAnalyzer.NET
                         StringBuilder possibleWord = new StringBuilder();
                         bool isNoneRepeatableLastChar = false;
                         bool stopWordMatchFailed = false;
+                        int stopWordStateNo = 0;
                         for (int i = 0; i < StringToSearchIn.Length; i++)
                         {
                             bool isNoneRepeatableLastCharCopy = isNoneRepeatableLastChar;
-                            char ch = StringToSearchIn[i];
-                            if (ch.IsValidWordCharacter(out isNoneRepeatableLastChar) &&
+                            char ch =(char) StringToSearchIn[i].ToLowerValueIfUpperCase();
+                            if (ch.IsThisLowerCaseCharacterIsValidWordCharacter(out isNoneRepeatableLastChar) &&
                                 (!isNoneRepeatableLastCharCopy || !isNoneRepeatableLastChar))
                             {
                                 possibleWord.Append(ch);
                                 if (!stopWordMatchFailed)
                                 {
-                                    bool isMatch = StopWordsAutomaton.GoToCharacter(ch, out int newStateNo);
-                                    stopWordMatchFailed = newStateNo == -1;
+                                    bool isMatch = StopWordsAutomaton.GoToCharacter(ch, stopWordStateNo, out stopWordStateNo);
+                                    if (stopWordStateNo == -1)
+                                    {
+                                        stopWordStateNo = 0;
+                                        stopWordMatchFailed = true;
+                                    }
                                     if (isMatch)
                                     {
                                         if (i + 1 == StringToSearchIn.Length ||
@@ -143,7 +148,7 @@ namespace Mash.SEOAnalyzer.NET
                             else
                             {
                                 stopWordMatchFailed = false;
-                                StopWordsAutomaton.ResetSearchState();
+                                stopWordStateNo = 0;
                                 string key = null;
                                 if (IsValidWordInCurrentContext(possibleWord.ToString(), ref key))
                                 {

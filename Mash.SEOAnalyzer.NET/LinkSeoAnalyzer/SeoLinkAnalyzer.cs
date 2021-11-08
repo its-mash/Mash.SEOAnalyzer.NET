@@ -140,57 +140,77 @@ namespace Mash.SEOAnalyzer.NET
 
         private void CalculatePageTextOccurrenceCountAndMetaDataKeywordOccurrenceCountInPageText()
         {
+            StringBuilder possibleWord = new StringBuilder();
+            bool isNoneRepeatableLastChar = false;
+            bool metaKeyWordMatchFailed = false;
+            int metaKeywordCurrentStateNo = 0;
             if (this.FilterStopWords)
             {
-                StringBuilder possibleWord = new StringBuilder();
-                bool isNoneRepeatableLastChar = false;
                 bool stopWordMatchFailed = false;
-                bool metaKeyWordMatchFailed = false;
+                int stopWordCurrentStateNo = 0;
                 for (int i = 0; i < StringToSearchIn.Length; i++)
                 {
                     bool isNoneRepeatableLastCharCopy = isNoneRepeatableLastChar;
-                    char ch = StringToSearchIn[i];
-                    if (ch.IsValidWordCharacter(out isNoneRepeatableLastChar) &&
+                    char ch = (char)StringToSearchIn[i].ToLowerValueIfUpperCase();
+                    if (ch.IsThisLowerCaseCharacterIsValidWordCharacter(out isNoneRepeatableLastChar) &&
                         (!isNoneRepeatableLastCharCopy || !isNoneRepeatableLastChar))
                     {
                         possibleWord.Append(ch);
-                        bool stopWordMatch = stopWordMatchFailed;
+                        bool isStopWordMatch = false;
                         if (!stopWordMatchFailed)
                         {
-                            stopWordMatch = StopWordsAutomaton.GoToCharacter(ch, out int newStateNo);
-                            stopWordMatchFailed = newStateNo == -1;
-                            if (stopWordMatch)
+                            isStopWordMatch = StopWordsAutomaton.GoToCharacter(ch, stopWordCurrentStateNo, out stopWordCurrentStateNo);
+                            if (stopWordCurrentStateNo == -1)
                             {
-                                if (i + 1 == StringToSearchIn.Length ||
-                                    !StringToSearchIn[i + 1].IsValidStopWordContinuingCharacter())
-                                {
-                                    possibleWord.Clear();
+                                stopWordMatchFailed = true;
+                                stopWordCurrentStateNo = 0;
 
+                            }
+                            if (isStopWordMatch)
+                            {
+                                if (!IsValidMetaKeywordMatch(possibleWord.Length, i))
+                                {
+                                    isStopWordMatch = false;
                                 }
                             }
                         }
                         if (!metaKeyWordMatchFailed)
                         {
-                            bool isMatch = _metaKeywordAutomaton.GoToCharacter(ch, out int newStateNo);
-                            metaKeyWordMatchFailed = newStateNo == -1;
-                            if (isMatch && !stopWordMatch)
+                            bool isMatch = _metaKeywordAutomaton.GoToCharacter(ch, metaKeywordCurrentStateNo, out metaKeywordCurrentStateNo);
+                            if (metaKeywordCurrentStateNo == -1)
                             {
-                                if (i + 1 == StringToSearchIn.Length ||
-                                    !StringToSearchIn[i + 1].IsValidMetaWordContinuingCharacter())
+                                metaKeywordCurrentStateNo = 0;
+                                metaKeyWordMatchFailed = true;
+                            }
+
+                            if (metaKeywordCurrentStateNo == 0) stopWordCurrentStateNo = 0;
+                            if (isMatch)
+                            {
+                                if (IsValidMetaKeywordMatch(possibleWord.Length, i))
                                 {
-                                    _result.MetaKeyWordOccurrencesInTextCounts.IncrementValueBy1(possibleWord.ToString());
+                                    if (!isStopWordMatch)
+                                        _result.MetaKeyWordOccurrencesInTextCounts.IncrementValueBy1(possibleWord.ToString());
+                                    else
+                                    {
+                                        _result.MetaKeyWordOccurrencesInTextCounts.Remove(possibleWord.ToString());
+                                    }
+                                    stopWordCurrentStateNo = 0;
+                                    stopWordMatchFailed = false;
+                                    metaKeywordCurrentStateNo = 0;
 
                                 }
                             }
                         }
+
+                        if (isStopWordMatch) possibleWord.Clear();
                     }
                     else
                     {
                         stopWordMatchFailed = false;
-                        StopWordsAutomaton.ResetSearchState();
+                        stopWordCurrentStateNo = 0;
 
                         metaKeyWordMatchFailed = false;
-                        _metaKeywordAutomaton.ResetSearchState();
+                        metaKeywordCurrentStateNo = 0;
 
                         string key = null;
                         if (IsValidWordInCurrentContext(possibleWord.ToString(), ref key))
@@ -208,25 +228,25 @@ namespace Mash.SEOAnalyzer.NET
             else
             {
                 //Code repetition to avoid should filter stopWordCheck every time
-                StringBuilder possibleWord = new StringBuilder();
-                bool isNoneRepeatableCurrentChar = false;
-                bool metaKeyWordMatchFailed = false;
                 for (int i = 0; i < StringToSearchIn.Length; i++)
                 {
-                    bool isNoneRepeatableLastChar = isNoneRepeatableCurrentChar;
-                    char ch = StringToSearchIn[i];
-                    if (ch.IsValidWordCharacter(out isNoneRepeatableCurrentChar) &&
-                        (!isNoneRepeatableLastChar || !isNoneRepeatableCurrentChar))
+                    bool isNoneRepeatableLastCharCopy = isNoneRepeatableLastChar;
+                    char ch = (char)StringToSearchIn[i].ToLowerValueIfUpperCase();
+                    if (ch.IsThisLowerCaseCharacterIsValidWordCharacter(out isNoneRepeatableLastChar) &&
+                        (!isNoneRepeatableLastCharCopy || !isNoneRepeatableLastChar))
                     {
                         possibleWord.Append(ch);
                         if (!metaKeyWordMatchFailed)
                         {
-                            bool isMatch = _metaKeywordAutomaton.GoToCharacter(ch, out int newStateNo);
-                            metaKeyWordMatchFailed = newStateNo == -1;
+                            bool isMatch = _metaKeywordAutomaton.GoToCharacter(ch, metaKeywordCurrentStateNo, out metaKeywordCurrentStateNo);
+                            if (metaKeywordCurrentStateNo == -1)
+                            {
+                                metaKeywordCurrentStateNo = 0;
+                                metaKeyWordMatchFailed = true;
+                            }
                             if (isMatch)
                             {
-                                if (i + 1 == StringToSearchIn.Length ||
-                                    !StringToSearchIn[i + 1].IsValidMetaWordContinuingCharacter())
+                                if (IsValidMetaKeywordMatch(possibleWord.Length, i))
                                 {
                                     _result.MetaKeyWordOccurrencesInTextCounts.IncrementValueBy1(possibleWord.ToString());
 
@@ -237,7 +257,7 @@ namespace Mash.SEOAnalyzer.NET
                     else
                     {
                         metaKeyWordMatchFailed = false;
-                        _metaKeywordAutomaton.ResetSearchState();
+                        metaKeywordCurrentStateNo = 0;
 
                         string key = null;
                         if (IsValidWordInCurrentContext(possibleWord.ToString(), ref key))
@@ -255,48 +275,96 @@ namespace Mash.SEOAnalyzer.NET
 
         }
 
+        private bool IsValidMetaKeywordMatch(int possibleWordLength, int i)
+        {
+            return possibleWordLength != 0 && (i + 1 == StringToSearchIn.Length ||
+                                               !StringToSearchIn[i + 1].IsValidMetaWordContinuingCharacter());
+        }
+
         private void CalculateMetaDataKeywordOccurrenceInPageTextCount()
         {
             if (this.FilterStopWords)
             {
                 StringBuilder possibleWord = new StringBuilder();
+                int stopWordCurrentStateNo = 0;
+                int metaKeywordCurrentStateNo = 0;
+                bool stopWordMatchFailed = false;
                 for (int i = 0; i < StringToSearchIn.Length; i++)
                 {
-                    char ch = StringToSearchIn[i];
+                    char ch = (char)StringToSearchIn[i].ToLowerValueIfUpperCase();
                     possibleWord.Append(ch);
-                    bool isMatchStopWord = StopWordsAutomaton.GoToCharacter(ch, out _);
-                    bool isMatchMetaKeyword = _metaKeywordAutomaton.GoToCharacter(ch, out int nextMetaKeywordStateNo);
-                    if (nextMetaKeywordStateNo == -1)
+
+                    bool isStopWordMatch = false;
+                    if (!stopWordMatchFailed)
                     {
+                        isStopWordMatch =
+                            StopWordsAutomaton.GoToCharacter(ch, stopWordCurrentStateNo, out stopWordCurrentStateNo);
+                        if (stopWordCurrentStateNo == -1)
+                        {
+                            stopWordMatchFailed = true;
+                            stopWordCurrentStateNo = 0;
+                        }
+
+                        if (isStopWordMatch)
+                        {
+                            if (!IsValidMetaKeywordMatch(possibleWord.Length, i))
+                            {
+                                isStopWordMatch = false;
+                            }
+                        }
+                    }
+
+                    bool isMatchMetaKeyword = _metaKeywordAutomaton.GoToCharacter(ch, metaKeywordCurrentStateNo, out metaKeywordCurrentStateNo);
+                    if (metaKeywordCurrentStateNo == -1)
+                    {
+                        metaKeywordCurrentStateNo = 0;
+                        stopWordMatchFailed = false;
                         possibleWord.Clear();
                     }
-                    else if (isMatchMetaKeyword && !isMatchStopWord)
+
+                    if (metaKeywordCurrentStateNo == 0) stopWordCurrentStateNo = 0;
+
+                    if (isMatchMetaKeyword)
                     {
-                        if (i + 1 == StringToSearchIn.Length ||
-                            !StringToSearchIn[i + 1].IsValidStopWordContinuingCharacter())
+                        if (IsValidMetaKeywordMatch(possibleWord.Length, i))
                         {
-                            _result.MetaKeyWordOccurrencesInTextCounts.IncrementValueBy1(possibleWord.ToString());
+                            if (!isStopWordMatch)
+                                _result.MetaKeyWordOccurrencesInTextCounts.IncrementValueBy1(possibleWord.ToString());
+                            else
+                            {
+                                _result.MetaKeyWordOccurrencesInTextCounts.Remove(possibleWord.ToString());
+                            }
+                            stopWordCurrentStateNo = 0;
+                            stopWordMatchFailed = false;
+                            metaKeywordCurrentStateNo = 0;
+                            possibleWord.Clear();
 
                         }
 
+
                     }
+
 
                 }
             }
             else
             {
                 //Code repetition to avoid should filter flag checks every time
+                int metaKeywordCurrentStateNo = 0;
                 StringBuilder possibleWord = new StringBuilder();
                 for (int i = 0; i < StringToSearchIn.Length; i++)
                 {
-                    char ch = StringToSearchIn[i];
+                    char ch = (char)StringToSearchIn[i].ToLowerValueIfUpperCase();
                     possibleWord.Append(ch);
-                    bool isMatchMetaKeyword = _metaKeywordAutomaton.GoToCharacter(ch, out int nextMetaKeywordStateNo);
-                    if (nextMetaKeywordStateNo == -1) possibleWord.Clear();
+                    bool isMatchMetaKeyword = _metaKeywordAutomaton.GoToCharacter(ch, metaKeywordCurrentStateNo, out metaKeywordCurrentStateNo);
+                    if (metaKeywordCurrentStateNo == -1)
+                    {
+                        metaKeywordCurrentStateNo = 0;
+                        possibleWord.Clear();
+                    }
                     else if (isMatchMetaKeyword)
                     {
-                        if (i + 1 == StringToSearchIn.Length ||
-                            !StringToSearchIn[i + 1].IsValidStopWordContinuingCharacter())
+                        if (IsValidMetaKeywordMatch(possibleWord.Length, i))
                         {
                             _result.MetaKeyWordOccurrencesInTextCounts.IncrementValueBy1(possibleWord.ToString());
 
@@ -396,7 +464,7 @@ namespace Mash.SEOAnalyzer.NET
                     {
 
                         _metaKeywordAutomaton.AddEnglishWord(metaKeyword);
-                        _result.MetaKeyWordOccurrencesInTextCounts.InitializeValueToZeroIfKeyDoesNotExist(metaKeyword);
+                        _result.MetaKeyWordOccurrencesInTextCounts.InitializeValueToZeroIfKeyDoesNotExist(metaKeyword.ToLower());
                     }
                     catch (Exception e)
                     {
