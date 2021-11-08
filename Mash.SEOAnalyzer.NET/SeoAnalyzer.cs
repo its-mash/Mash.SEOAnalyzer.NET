@@ -195,15 +195,16 @@ namespace Mash.SEOAnalyzer.NET
 
                 if (this.CountExternalLinks)
                 {
-
                     var linkParser = new Regex(RegexPattern.LinkPattern3);
                     var matchCollection = linkParser.Matches(StringToSearchIn);
                     foreach (Match match in matchCollection)
                     {
-                        if (match.Value[match.Value.Length - 1] != '.')
-                            _result.ExternalLinksFoundInTextCount.IncrementValueBy1(match.Value);
-                    }
+                        if (Uri.TryCreate(match.Value.ToString(), UriKind.Absolute, out _))
+                        {
 
+                            _result.ExternalLinksFoundInTextCount.IncrementValueBy1(match.Value);
+                        }
+                    }
 
                 }
 
