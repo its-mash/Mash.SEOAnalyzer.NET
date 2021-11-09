@@ -130,10 +130,10 @@ namespace Mash.SEOAnalyzer.NET
                         var matchCollection = linkParser.Matches(StringToSearchIn);
                         foreach (Match match in matchCollection)
                         {
-                            if (Uri.TryCreate(match.Value.ToString(), UriKind.Absolute, out _))
+                            if (Uri.TryCreate(match.Value.ToString(), UriKind.Absolute, out Uri tempUri))
                             {
-
-                                _result.ExternalLinksFoundInTextCount.IncrementValueBy1(match.Value);
+                                if (this._url.Authority != tempUri.Authority)
+                                    _result.ExternalLinksFoundInTextCount.IncrementValueBy1(match.Value);
                             }
                         }
                         _result.ExternalLinksFoundInHtmlCount = htmlDocument.GetExternalLinksCountFoundInHtml(this._url);
