@@ -20,6 +20,7 @@ namespace Mash.SEOAnalyzer.NET
         private readonly char[] _invalidBeginningCharacters = new char[] { '-', '&', '\'' };
         private readonly char[] _invalidEndingCharacters = new char[] { '-', '&', '\'' };
         private SeoTextAnalyzerResult _result;
+        protected Regex AbsoluteUrlWithOrWithoutSchemePattern = new Regex(RegexPattern.absoluteUrlCheckWithOrWithoutScheme);
 
         static SeoAnalyzer()
         {
@@ -121,7 +122,7 @@ namespace Mash.SEOAnalyzer.NET
                         for (int i = 0; i < StringToSearchIn.Length; i++)
                         {
                             bool isNoneRepeatableLastCharCopy = isNoneRepeatableLastChar;
-                            char ch =(char) StringToSearchIn[i].ToLowerValueIfUpperCase();
+                            char ch = (char)StringToSearchIn[i].ToLowerValueIfUpperCase();
                             if (ch.IsThisLowerCaseCharacterIsValidWordCharacter(out isNoneRepeatableLastChar) &&
                                 (!isNoneRepeatableLastCharCopy || !isNoneRepeatableLastChar))
                             {
@@ -199,9 +200,13 @@ namespace Mash.SEOAnalyzer.NET
                     var matchCollection = linkParser.Matches(StringToSearchIn);
                     foreach (Match match in matchCollection)
                     {
-                        if (Uri.TryCreate(match.Value.ToString(), UriKind.Absolute, out _))
+                        string possibleAbsoluteUrl = match.Value;
+                        if (!AbsoluteUrlWithOrWithoutSchemePattern.Match(match.Value).Success)
                         {
-
+                            possibleAbsoluteUrl = "http://" + possibleAbsoluteUrl;
+                        }
+                        if (Uri.TryCreate(possibleAbsoluteUrl, UriKind.Absolute, out Uri _))
+                        {
                             _result.ExternalLinksFoundInTextCount.IncrementValueBy1(match.Value);
                         }
                     }

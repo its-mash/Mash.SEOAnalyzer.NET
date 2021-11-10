@@ -20,12 +20,11 @@ namespace Mash.SEOAnalyzer.NET
     public class SeoLinkAnalyzer : SeoAnalyzer, ILinkSeoAnalyzer
     {
         private int _flag = 0;
-        private Uri _url;
+        private readonly Uri _url;
         private SeoLinkAnalyzerResult _result;
         private Dictionary<string, string> _headers = new Dictionary<string, string>();
         private AhoCorasickEnglishWordsSetSearch _metaKeywordAutomaton = new AhoCorasickEnglishWordsSetSearch(true);
         private bool _flagChangedAfterGeneratingLastResult = false;
-        private Regex _absoluteUrlWithOrWithoutSchemePattern = new Regex(RegexPattern.absoluteUrlCheckWithOrWithoutScheme);
 
 
 
@@ -132,7 +131,7 @@ namespace Mash.SEOAnalyzer.NET
                         foreach (Match match in matchCollection)
                         {
                             string possibleAbsoluteUrl = match.Value;
-                            if (!_absoluteUrlWithOrWithoutSchemePattern.Match(match.Value).Success)
+                            if (!AbsoluteUrlWithOrWithoutSchemePattern.Match(match.Value).Success)
                             {
                                 possibleAbsoluteUrl = "http://" + possibleAbsoluteUrl;
                             }
