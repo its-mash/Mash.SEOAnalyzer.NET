@@ -14,6 +14,11 @@ namespace Mash.SeoAnalyzer.NET.Test
     {
         static void Main(string[] args)
         {
+            var rpattern = new Regex(RegexPattern.absoluteUrlCheckWithOrWithoutScheme);
+            string url = "ftp://www.stackoverflow.com";
+            Console.WriteLine(rpattern.Match(url).Success);
+            Console.ReadKey();
+            return;
 
             ILinkSeoAnalyzer x =
                 new SeoLinkAnalyzer(new Uri(
